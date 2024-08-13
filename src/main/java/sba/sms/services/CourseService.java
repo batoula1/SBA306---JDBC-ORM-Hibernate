@@ -1,10 +1,10 @@
 package sba.sms.services;
 
 import org.hibernate.Session;
-import org.hibernate.SessionFactory;
 import org.hibernate.Transaction;
 import org.hibernate.cfg.Configuration;
-import org.hibernate.query.Query;
+import jakarta.persistence.TypedQuery;
+import org.hibernate.SessionFactory;
 import sba.sms.dao.CourseI;
 import sba.sms.models.Course;
 
@@ -18,53 +18,38 @@ import java.util.List;
  */
 public class CourseService implements CourseI {
 
-    SessionFactory factory = new Configuration().configure().buildSessionFactory();
-
+    private static final SessionFactory factory = new Configuration().configure().buildSessionFactory();
 
     @Override
     public void createCourse(Course course) {
-        Session session = factory.openSession();
         Transaction transaction = null;
-        try{
 
+        try (Session session = factory.openSession()) {
             transaction = session.beginTransaction();
-
             session.persist(course);
-
             transaction.commit();
-
-        }catch (Exception e){
-            if(transaction != null){
+        } catch (Exception e) {
+            if (transaction != null) {
                 transaction.rollback();
             }
-            e.printStackTrace();
-        }finally {
-            session.close();
+            System.out.println(e.getMessage());
         }
     }
 
     @Override
     public Course getCourseById(int courseId) {
-
-        Course course = null;
-        Session   session = factory.openSession();
         Transaction transaction = null;
-        try{
+        Course course = null;
+
+        try (Session session = factory.openSession()) {
             transaction = session.beginTransaction();
-
-            Query<Course> query = session.createQuery("From Course WHERE id=:id", Course.class);
-            query.setParameter("id", courseId);
-
-            course = query.getSingleResult();
+            course = session.get(Course.class, courseId);
             transaction.commit();
-
-        }catch (Exception e){
-            if(transaction != null){
+        } catch (Exception e) {
+            if (transaction != null) {
                 transaction.rollback();
             }
-            e.printStackTrace();
-        }finally {
-            session.close();
+            System.out.println(e.getMessage());
         }
 
         return course;
@@ -72,29 +57,23 @@ public class CourseService implements CourseI {
 
     @Override
     public List<Course> getAllCourses() {
-        Session session = factory.openSession();
-        Transaction transaction = null;
-
         List<Course> courses = new ArrayList<>();
-        try{
-            transaction = session.beginTransaction();
 
+        try (Session session = factory.openSession()) {
+            Transaction transaction = session.beginTransaction();
             String hql = "FROM Course";
-            Query<Course> query = session.createQuery(hql,
-                    Course.class);
+            TypedQuery<Course> query = session.createQuery(hql, Course.class);
             courses = query.getResultList();
-
             transaction.commit();
-
-        }catch (Exception e){
-            if(transaction != null){
-                transaction.rollback();
-            }
-            e.printStackTrace();
-        }finally {
-            session.close();
+        } catch (Exception e) {
+            System.out.println(e.getMessage());
         }
 
         return courses;
+    }
+
+    @Override
+    public Object getId() {
+        return null;
     }
 }
